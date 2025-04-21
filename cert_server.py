@@ -53,6 +53,7 @@ class TokenStore:
 
 class ServerConfig:
     def __init__(self):
+        self.host: str = "0.0.0.0"
         self.port: int = 8000
         self.callback_path: str = "/auth/callback"
         self.service_id: str = ""
@@ -70,6 +71,7 @@ def initialize_server(args) -> ServerConfig:
     if not variables["SERVICE_ID"] or not variables["loginUrl"]:
         raise ValueError("Failed to get SERVICE_ID or loginUrl from certtool")
 
+    config.host = args.host
     config.service_id = variables["SERVICE_ID"]
     config.login_url = variables["loginUrl"]
     config.cert_type = CertType.TV if args.tv else CertType.OTHER
@@ -327,7 +329,7 @@ def setup_routes():
 def open_browser():
     """Open browser with instructions"""
     try:
-        url = f"http://localhost:{config.port}/auth/start"
+        url = f"http://{config.host}:{config.port}/auth/start"
         response = requests.get(url)
         data = response.json()
 
@@ -351,6 +353,7 @@ if __name__ == "__main__":
     parser.add_argument("--tv", action="store_true", help="Generate TV certificates")
     parser.add_argument("--device-id", required=True, help="Device ID (comma-separated for multiple IDs)")
     parser.add_argument("--email", required=True, help="Email address")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind the HTTP server to")
     parser.add_argument("--cert-password", required=False, default="", help="Password with which to sign the certificates")
     args = parser.parse_args()
 
@@ -362,4 +365,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     Timer(1, open_browser).start()
-    uvicorn.run(app, host="0.0.0.0", port=config.port)
+    uvicorn.run(app, host=config.host, port=config.port)
